@@ -1,0 +1,93 @@
+\section{Hardware}
+
+You will be given a 4-port Ethernet USB adapter that you can use to
+add four physical ports to any PC.  If you use the laboratory PCs, be
+aware that some of the USB ports provide insufficient power. Which
+ones work is inconsistent even across identical PCs and often even the
+adjacent USB port works even though it looks identical!
+
+You are not expected to write a driver to interact directly with the
+Ethernet USB adapter.  Instead, you will use the provided
+{\tt network-driver} which can already provide you with raw access
+to any Ethernet interface (incl. WLAN).
+
+\subsection{Alternative setup with virtual machines}
+
+
+Clone the Git repository at
+\url{https://gitlab.ti.bfh.ch/demos/vlab} and follow the provided
+instructions.
+
+\section{The {\tt network-driver}}
+
+To access the hardware, your final program should be {\em executed}
+by the {\tt network-driver}.  For this, you call
+\begin{verbatim}
+$ network-driver IFC1 ... IFCn - ./switch ARGS
+\end{verbatim}
+where ``IFC1 ... IFCn'' is the list of interface names that you want
+{\tt network-driver} to support (i.e. ``lan0'', ``lan1'') and ``PROG''
+is the name of your binary and ``ARGS'' are the command-line arguments
+to ``switch''.  Note the ``-'' (single minus) between the last
+interface name and ``switch''.  Also, ``./switch'' must be given with
+its path (i.e. ``./switch'' for the current working directory) or be
+located in a directory that is given in the ``PATH'' environment
+variable.
+
+Once you start {\tt switch} like this, you can read Ethernet frames
+and end-user commands from ``stdin'' and write Ethernet
+frames (and end-user output) to ``stdout''.
+
+Note that you must follow the {\tt network-driver}'s particular
+format for inter-process communication when reading and writing.
+You will {\bf not} be communicating directly with the console!
+
+
+\subsection{Build the driver}
+
+To compile the code, run:
+\begin{verbatim}
+# This requires gcc
+$ make
+# Creating network interfaces requires 'root' rights
+$ sudo chmod +s network-driver
+# Try it out:
+$ ./network-driver eth0 - ./parser
+\end{verbatim}
+Press CTRL-C to stop the {\tt network-driver} and {\tt parser}.
+
+
+\subsection{Understanding the driver}
+
+The output of the driver is always in binary and generally in network
+byte order.  You can use a tool like {\tt hexer} to make the output
+slightly more readable.
+
+The driver will always output a series of messages starting with
+a {\tt struct GLAB\_MessageHeader} that includes a type and a size.
+
+When the driver starts, it first writes a control message (of type 0)
+with payload that includes 6 bytes for each of the local interface's
+MAC addresses to your {\tt stdin}.  Henceforce, messages received
+of type 0 will be single lines of command-line input (including the
+'\\n'-terminator, but excluding the 0-terminator of C) as typed in
+by the user.
+
+Furthermore, the driver will output a {\tt struct GLAB\_MessageHeader}
+for each frame received.  The {\tt struct GLAB\_MessageHeader} will be
+followed by the actual network frame, starting with the Ethernet frame
+excluding preamble, delimiter and FCS.  The {\tt struct
+  GLAB\_MessageHeader} includes the total length of the subsequent
+frame (encoded in network byte order, the size includes the {\tt
+  struct GLAB\_MessageHeader}).  The fixed message type identifies the
+number of the network interface, counting from one (also in network
+byte order).
+
+In addition to writing received frames to your {\tt stdin}, the driver
+also tries to read from your {\tt stdout}.  Applications must send the
+same message format to {\tt stdout} that the driver sends them on {\tt
+  stdin}.  The driver does {\bf not} check that the source MAC is set
+correctly!
+
+To write to the console's {\tt stdout}, use a message type of 0.
+You may directly write to {\tt stderr} for error messages.

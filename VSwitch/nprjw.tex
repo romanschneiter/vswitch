@@ -1,0 +1,177 @@
+\documentclass{article}
+\usepackage{url}
+\usepackage{upquote}
+
+\title{BTI 3021: Networking Project - Repeaters}
+
+\author{Christian Grothoff}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+This project is ONLY for students repeating BTI 3021!  Unlike the
+three sprints for first-time students, you must work in teams of {\bf
+  at most two students} for this project.  To pass the networking part
+of BTI 3021, you must achieve a total of {\bf 24} points in this
+project (for a team of two).  The deadline is the same deadline as for
+sprint 3.
+
+For this project you will implement, document and test an Ethernet
+{\bf vswitch} in userland under GNU/Linux.
+
+While the driver and skeleton you are given is written in C, you may
+use {\em any} language of your choice for the implementation (as long
+as you extend the {\tt Makefile} with adequate build rules).  However,
+if you choose a different language, be prepared to write additional
+boilerplate yourselves.
+
+How an Ethernet virtual switch (vswitch) works is expected to be
+understood from the networking class. If not, you can find plenty of
+documentation and specifications on the Internet.
+
+
+\subsection{Deliverables}
+
+There will be two main deliverables for the sprint:
+
+\begin{description}
+\item[Implementation] You must {\bf implement the switching
+  algorithm}, extending the {\tt vswitch.c} template provided
+  (or write the entire logic from scratch in another language).
+\item[Testing] You must implement and submit your own {\bf test cases}
+  by {\em pretending} to be the network driver (see below) and sending
+  various Ethernet frames (with and without VLAN tags)
+  to your program and verifying that it
+  outputs the correct frames. Additionally, you should perform
+  {\em interoperability} tests against existing
+  implementations (i.e. other notebooks from your team to ensure that
+  your switch integrates correctly with other implementations).
+\end{description}
+
+
+\subsection{Functionality}
+
+Implement {\em vswitch} which forwards frames received on any
+interface to any other interface, passively learns MAC addresses,
+and respects VLAN tags. As before, the command-line specifies the
+list of network interfaces you should switch on, but with
+additional options to specify the VLANS.  Example:
+\begin{verbatim}
+$ network-driver eth0 eth1 eth2 eth3 - \
+  vswitch eth0[T:1,2] eth1[U:1] eth2[U:2] eth3[U:2]
+\end{verbatim}
+This is supposed to run VLANs 1 and 2 tagged on {\tt eth0},
+and VLANs 1, 2 or 2 untagged on {\tt eth1}, {\tt eth2},
+or {\tt eth3} respectively.  Network interfaces specified
+without ``[]'' should operate untagged on VLAN 0.  It is
+not allowed to have interfaces accept both tagged and
+untagged frames.
+
+You may want to test your implementation against the Netgear
+switch of the lab. For example, you could
+Bridge a tagged VLAN ({\tt VID}$=3$) from the Netgear switch ({\tt
+  eth1}) with two untagged notebooks ({\tt eth2}, {\tt eth3}) using
+your vswitch code.
+
+
+We will specifically also look for the following properties of a vswitch:
+\begin{itemize}
+\item Adding and stripping VLAN tags
+\item Proper separation of VLANs
+\item Support for multicast and broadcast
+\item Changing external connections (re-learning when devices move around the network)
+\item Managing an ``attacker'' process that sends from billions of MAC
+  addresses.  Ensure your vswitch's learning table uses finite memory.
+  You may use a single global learning table or separate tables per VLAN.
+\end{itemize}
+
+\input{testing.tex}
+
+\input{grading.tex}
+
+\subsection{VSwitch grading}
+
+For the {\bf vswitch} sprint, you get points for each of the key deliverables:
+\begin{center}
+\begin{tabular}{l|r}
+Correct implementation                    & 18 \\ \hline
+Comprehensive test cases                  &  6 \\ \hline \hline
+Total                                     & 24
+\end{tabular}
+\end{center}
+
+\subsubsection{Correct implementation}
+\begin{itemize}
+  \item 18 points for passing test cases
+\end{itemize}
+
+\subsubsection{Comprehensive test cases}
+\begin{itemize}
+\item 0 points if public reference implementation (see Section~\ref{sec:binaries})
+      fails test cases, {\bf otherwise}
+\item 6 points for failing buggy implementations (see Section~\ref{sec:binaries})
+\end{itemize}
+
+\input{bonus.tex}
+
+\input{setup.tex}
+
+\section{Provided code}
+
+\input{code.tex}
+
+The main file for the exercise is {\tt vswitch.c}. In this file, you should
+implement a program {\tt vswitch} which forwards frames received on any
+interface to any other interface, but passively learns MAC addresses
+and optimizes subsequent traffic.
+
+
+\section{Provided binaries} \label{sec:binaries}
+
+You are provided with several binaries:
+
+\begin{description}
+\item[reference-test-vswitch] A public test case, run using ``./reference-test-vswitch ./vswitch''
+  to test your vswitch. Returns 0 on success.
+\item[reference-vswitch] Reference implementation of the ``vswitch''.
+\item[bug1-vswitch] Buggy implementation of a ``vswitch''.
+\item[bug2-vswitch] Buggy implementation of a ``vswitch''.
+\item[bug3-vswitch] Buggy implementation of a ``vswitch''.
+\end{description}
+
+
+\section{Required make targets}
+
+You may modify the build system. However, the final build system must
+have the following {\tt make} targets:
+
+\begin{description}
+\item[all] build all binaries
+\item[clean] remove all compiled files
+\item[vswitch] build your ``vswitch`` binary from source; the binary MUST end up in the top-level directory of your build tree.
+\item[test-vswitch] build your ``test-vswitch`` program from source; the program MUST end up in the top-level directory of your build tree.
+\item[check-vswitch] Run ``test-vswitch`` against the ``vswitch'' binary.
+\end{description}
+
+For grading, we will basically run commands like:
+\begin{verbatim}
+GRADE=0
+make test-vswitch
+cp bug1-vswitch vswitch
+make check-vswitch || GRADE=`expr $GRADE + 2`
+cp bug2-vswitch vswitch
+make check-vswitch || GRADE=`expr $GRADE + 2`
+cp bug3-vswitch vswitch
+make check-vswitch || GRADE=`expr $GRADE + 2`
+cp reference-vswitch vswitch
+make check-vswitch || GRADE=0
+echo "Test grade: $GRADE"
+\end{verbatim}
+
+You must thus make sure the build system continues to create programs
+in the right (top-level) location!
+
+\end{document}

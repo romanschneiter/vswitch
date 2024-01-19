@@ -1,0 +1,424 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,decorations.pathreplacing,shapes,fit}
+\usepackage{colortbl}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\usepackage{array, adjustbox,url}
+\usepackage{pifont,marvosym} % wasysym
+\usepackage{rotating,subfig}
+\usepackage{xspace}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,decorations.pathreplacing,shapes}
+
+\title{GLab: Frequenty Asked Questions}
+
+\author{Christian Grothoff, Hansjürg Wenger}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+
+\section{C Programming}
+
+\subsection{How do I print a MAC address?}
+
+Use something like this:
+\begin{verbatim}
+static void
+print_mac (const struct MacAddress *mac)
+{
+  print ("%02x:%02x:%02x:%02x:%02x:%02x\n
+         mac->mac[0], mac->mac[1],
+         mac->mac[2], mac->mac[3],
+         mac->mac[4], mac->mac[5]);
+}
+\end{verbatim}
+
+\subsection{How do I compare two MAC addresses?}
+
+Use something like this:
+\begin{verbatim}
+static int
+maccmp (const struct MacAddress *mac1,
+        const struct MacAddress *mac2)
+{
+  return memcmp (mac1, mac2, sizeof (struct MacAddress));
+}
+\end{verbatim}
+
+\subsection{How do I print an IPv4 address?}
+
+Use something like this:
+\begin{verbatim}
+#include <arpa/inet.h>
+
+static void
+print_ip (const struct in_addr *ip)
+{
+  char buf[INET_ADDRSTRLEN];
+  print ("%s\n
+         inet_ntop (AF_INET,
+                    ip,
+                    buf,
+                    sizeof (buf)));
+}
+\end{verbatim}
+
+
+\subsection{How do pointers work again?}
+
+Consider this code:
+\begin{verbatim}
+int i = 5;
+int *j = &i;
+int k = *j;
+\end{verbatim}
+$i$ is an integer. When you write just $i$, you will get the value
+$5$. $i$ is stored in computer memory. When you write $\&i$, you get
+the address where $i$ is stored in memory.  $j$ is a pointer to
+an integer. So the value of $j$ is an address in memory where we
+expect to find an integer.  If we want to read the integer at that
+address, we write $*j$ to dereference the address $j$.
+
+
+\subsection{How do arrays work again?}
+
+Arrays in C are represented as pointers to the first element of the
+array.
+
+Consider this code:
+\begin{verbatim}
+int i[] = { 5 , 6 };
+int *j = i;
+i[0] + j[1]; // 11
+\end{verbatim}
+Here $i$ is declared as an array with two values, 5 and 6.  $j$ is,
+like $i$, a pointer.  You can treat pointers like arrays and vice-versa.
+The only difference is that {\tt sizeof(i)} will give you the size of
+the array as the C compiler knows how large the array is in memory, while
+{\tt sizeof(j)} will give you the size of (any) pointer.
+
+The following code generates exactly the same situation as the fragment
+above:
+\begin{verbatim}
+int i[2];
+int *j = i;
+*i = 5;
+*(j+1) = 6;
+\end{verbatim}
+
+
+\subsection{How do I get a pointer to the IPv4 header?}
+
+
+A slightly unclean\footnote{due to unaligned pointer access}
+minimalistic solution that works fine on your CPUs would look like
+this:
+\begin{verbatim}
+static void
+handle_frame (uint16_t interface,
+	      const void *frame,
+	      size_t frame_size)
+{
+  struct EthernetHeader *eh = frame;
+  struct IPv4Header *ip = (struct IPv4Header *) &frame[1];
+
+  if (frame_size < sizeof (struct EthernetHeader) +
+                   sizeof (struct IPv4Header))
+    fail ();
+  // use(ip); here!
+}
+\end{verbatim}
+
+
+
+\subsection{Why does my {\tt printf} not work?}
+
+{\tt printf} prints to {\tt stdout}, which in your setup is the
+{\tt network-driver} which expects to receive frames to be transmitted.
+To output to the console, you need to give a special command to
+the {\tt network-driver}.  This is provided by the {\tt print()} function,
+which thus replaces {\tt printf} for your project.  You can
+also directly use {\tt fprintf (stderr, ...)} to write to {\tt stderr}
+for logging. Note that required output to the user (for grading) must
+be generated using {\tt print}.
+
+\subsection{I am using {\tt print}, and it still does not work!}
+
+You might be having a problem with terminal discipline. {\tt print}ing
+to {\tt stdout} is by default buffered until a newline is encountered.
+Make sure to terminate your output with ``\\n''.
+
+
+\newpage
+\section{Setup}
+
+\subsection{Why do I get ``permission denied'' when running the network-driver, even as root?}
+
+The latest version of the Ubuntu operating system refuses
+to grant RAW socket access to binaries that are in the {\tt /home}
+directory, even if run by {\tt root}.  Copying the binary to
+{\tt /root} or {/tt /usr/sbin} makes it work:
+
+\begin{verbatim}
+# cp network-driver /usr/sbin/network-driver
+# /usr/sbin/network-driver eth0 - ./parser
+\end{verbatim}
+
+\subsection{What should my network topology look like?}
+
+Figure~\ref{fig:setup} shows the suggested setup.  If you are a team
+of three students, you may want to connect a third notebook. If you
+are using the Banana PI, you must use Ethernet USB adapters instead of
+the Ethernet ports of the PI for the connections to the notebooks for
+the {\tt hub}.  {\tt switch} and {\tt vswitch} programs.
+
+\begin{figure}[h!]
+  \centering
+
+\colorlet{FGcolor}{green}
+
+\colorlet{FG100P}{FGcolor!100}
+\colorlet{FG90P}{FGcolor!90}
+\colorlet{FG80P}{FGcolor!80}
+\colorlet{FG70P}{FGcolor!70}
+\colorlet{FG60P}{FGcolor!60}
+\colorlet{FG50P}{FGcolor!50}
+\colorlet{FG40P}{FGcolor!40}
+\colorlet{FG30P}{FGcolor!30}
+\colorlet{FG20P}{FGcolor!20}
+\colorlet{FG10P}{FGcolor!10}
+\colorlet{FG00P}{FGcolor!00}
+
+% Use RGB: TUMBlue, TUMDarkBlue, TUMDarkerBlue
+\definecolor{color_bg}{rgb}{0,0,1}
+
+\tikzstyle{bg_fill_10} = [fill=FG10P]
+\tikzstyle{bg_fill_20} = [fill=FG20P]
+\tikzstyle{bg_fill_30} = [fill=FG30P]
+\tikzstyle{bg_fill_40} = [fill=FG40P]
+\tikzstyle{bg_fill_50} = [fill=FG50P]
+\tikzstyle{bg_fill_60} = [fill=FG60P]
+\tikzstyle{bg_fill_70} = [fill=FG70P]
+\tikzstyle{bg_fill_80} = [fill=FG80P]
+\tikzstyle{bg_fill_90} = [fill=FG90P]
+\tikzstyle{bg_fill_100} = [fill=FG100P]
+
+% Define Sizes
+\newcommand\defaultpicheight{2em}
+\newcommand\defaultpicheightsmall{1em}
+\newcommand\defaultblockheight{1.5em}
+\newcommand\defaultblockwidth{5cm}
+\newcommand\defaultblockdistance{0.25em}
+\newcommand\defaultinterblockdistance{9em}
+\newcommand\dibd{\defaultinterblockdistance}
+\newcommand\dbh{\defaultblockheight}
+\newcommand\blocksizedecrease{0.95}
+\newcommand\blocksizeincrease{1.05}
+
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=circle,minimum width = 2em, draw,inner sep=2pt] (char) {#1};}}
+
+% Define Blocks
+\tikzstyle{my_block_width} = [minimum width=\defaultblockwidth]
+\tikzstyle{my_block_height} = [minimum height=\defaultblockheight]
+
+% Cliparts
+%\pgfdeclareimage[height=\defaultpicheight]{webserver}{cliparts/webserver}
+%\pgfdeclareimage[height=\defaultpicheight]{house}{cliparts/house}
+%\pgfdeclareimage[height=\defaultpicheight]{router}{cliparts/router}
+%\pgfdeclareimage[height=\defaultpicheight]{femaleuser}{cliparts/femaleuser}
+%\pgfdeclareimage[height=\defaultpicheight]{maleuser}{cliparts/maleuser}
+%\pgfdeclareimage[height=\defaultpicheight]{globe}{cliparts/globe}
+%\pgfdeclareimage[height=\defaultpicheight]{document}{cliparts/document}
+%\pgfdeclareimage[height=\defaultpicheightsmall]{documentsmall}{cliparts/document}
+%\pgfdeclareimage[height=\defaultpicheight]{certificate}{cliparts/certificate}
+
+% Block style
+\tikzstyle{my_block} = [draw, rectangle, align=center, semithick, rounded corners,
+  my_block_height, my_block_width]
+
+\tikzstyle{my_dashed_block} = [draw, rectangle, align=center, semithick, dashed, rounded corners,
+  my_block_height, my_block_width]
+
+\tikzstyle{my_inv_block} = [draw, rectangle, align=center, draw=none,
+  my_block_height, my_block_width]
+
+\tikzstyle{my_text_block} = [draw, rectangle, align=center, draw=none]
+
+\begin{tikzpicture}[auto, node distance=5cm,>=latex]
+	\node [my_block, bg_fill_20,
+				minimum width =  \defaultblockwidth,
+				minimum height = 3 * \defaultblockheight]
+	                        (pi){4x USB-Adapter (or Banana Pi)};
+	\node [my_block, bg_fill_20,
+                                above of = pi,
+				minimum width = \defaultblockwidth,
+				minimum height = 3 * \defaultblockheight]
+				(desktop){Desktop};
+	\node [my_block, bg_fill_20,
+                                below left of = pi,
+				minimum width = \defaultblockwidth,
+ 				minimum height = 3 * \defaultblockheight]
+  	                        (notebook1){Notebook};
+       	\node [my_block, bg_fill_20,
+                                below right of = pi,
+				minimum width = \defaultblockwidth,
+				minimum height = 3 * \defaultblockheight]
+				(notebook2){Notebook};
+	\draw[<->] (pi) -- (desktop) node[midway,above,sloped] {Control (USB)};
+	\draw[<->] (pi) -- (notebook1) node[midway,above,sloped] {Ethernet};
+	\draw[<->] (pi) -- (notebook2) node[midway,above,sloped] {Ethernet};
+\end{tikzpicture}
+ \caption{Suggested network topology.}
+  \label{fig:setup}
+\end{figure}
+
+\subsection{My notebook cannot ping the system running the switch/router}
+
+This is normal, as your switch/router logic does not forward the
+traffic to the desktop's host operating system.  Your notebooks can
+only reach systems that {\em your} hub, switch or router allows them
+to reach.
+
+
+\subsection{How do I debug my code {\em without} {\tt fprintf()}?}
+
+First, make sure you compiled your code with debug symbols and
+without optimizations ({\tt gcc -g -O0}).  Then, launch your program as usual:
+\begin{verbatim}
+# ./network-driver IFCs - prog ARGs
+\end{verbatim}
+Then, in another shell, check with {\tt ps} which PID your ``prog'' process has:
+\begin{verbatim}
+# ps ax | grep prog
+\end{verbatim}
+Now you can attach {\tt gdb} to your running program (substitute \$PID for the PID you got from {\tt ps}):
+\begin{verbatim}
+# gdb prog
+(gdb) attach $PID
+\end{verbatim}
+You should now set a breakpoint at a location where you want to start debugging,
+and then continue execution until the breakpoint is reached:
+\begin{verbatim}
+(gdb) break handle_frame
+(gdb) continue
+\end{verbatim}
+Then, use ``CTRL-x a'' to enable GDB's code inspection mode to see where you are
+executing.  Use ``n(ext)'' to execute the next statement. Use ``s(tep)'' to step
+into a function call.  Use ``print'' or ``x'' (eXamine) to inspect variables and
+memory.  Use ``cont(inue)'' to run until the next breakpoint. Use ``q(uit)'' to
+exit {\tt gdb}. Note that your process will continue.
+
+Final note: this only works if your program does not crash before you can attach
+{\tt gdb}.  Enable core dumps and inspect the crash with gdb if your program
+crashes:
+\begin{verbatim}
+# ulimit -c 999999
+# echo core > /proc/sys/kernel/core_pattern
+# ./network-driver ... # reproduce crash
+# gdb prog core
+(gdb) bt full # view stack trace at time of crash
+\end{verbatim}
+Read the {\tt gdb} manual for more information on how to use the GNU Debugger!
+
+
+\subsection{I get not network traffic on the interface. Why?}
+
+The most common cause is that you did not enable the network adapter,
+so the interface is still physically down. For each network interface,
+run:
+\begin{verbatim}
+# ip link set up dev INTERFACENAME
+\end{verbatim}
+You can check that it worked using:
+\begin{verbatim}
+# ip link list
+\end{verbatim}
+If you still see a ``DOWN'' in the line, check the cable.
+
+Your USB port may also supply insufficient power to the USB adapter.
+In this case, try another port.
+
+
+\section{Protocol details}
+
+\subsection{MTU $=$ 1500 or 1514?}
+
+When we traditionally speak of an MTU of 1500 for Ethernet, this
+{\em excludes} the Ethernet header (and CRC, and preamble).  When
+reporting the MTU in an ICMP ``fragmentation needed'' message,
+the Ethernet header is also excluded (layer 3!).
+
+Note that the MTU command-line argument (!) for the {\tt router} {\em
+  excludes} the Ethernet header, but {\bf internally} the \texttt{mtu}
+member of the {\tt struct Interface} {em includes} the Ethernet header
+(see logic in {\tt parse\_cmd\_arg} and check in {\tt forward\_to}).
+
+You must subtract the size of the Ethernet header when generating the
+ICMP message!
+
+
+\end{document}
+% Legacy issues, should be resolved.
+
+\subsection{I can't compile the ''network-driver'' on a (lab) PC}
+
+When I try to compile the ''network-driver'' on a lab PC booted from the USB-Stick (Ubuntu 16.04.5 LTS) I get the following error:
+
+\begin{verbatim}
+/usr/include/linux/llc.h:26:27: error: ‘IFHWADDRLEN’ undeclared here (not in a function)
+\end{verbatim}
+
+Add the line
+\begin{verbatim}
+#include <linux/if.h>
+\end{verbatim}
+
+after the line
+\begin{verbatim}
+#include <linux/socket.h>
+\end{verbatim}
+
+of the file ''/usr/include/linux/llc.h''
+
+
+\subsection{When running the network-driver with the hub it terminates with ''write-error to tun: Message too long''}
+
+The problem occures because the ethernet card/driver uses ''generic receive offload'' (gro). You have to disable ''gro'' on all interfaces handled by the ''network-driver'' (not only for use with the hub).\newline
+
+To disable ''gro'' on e.g. {\tt eth0} use (as root):
+
+\begin{verbatim}
+# ethtool -K eth0 gro off
+\end{verbatim}
+
+To display the actual settings use:
+
+\begin{verbatim}
+# ethtool -k eth0
+\end{verbatim}
+
+To reenable ''gro'' use (as root):
+
+\begin{verbatim}
+# ethtool -K eth0 gro on
+\end{verbatim}
+
+Eventualy you must also disable ''generic segmentation offload'' (gso).\newline
+Details about ''gro'' and ''gso'' see:
+\begin{itemize}
+\item Wikipedia about
+\href{https://en.wikipedia.org/wiki/Large_receive_offload}
+{''Large Receive Offload''}\newline
+\url{https://en.wikipedia.org/wiki/Large_receive_offload}
+\item LWN article \href{https://lwn.net/Articles/358910/}{''JLS2009: Generic receive offload''}\newline
+\url{https://lwn.net/Articles/358910/}
+\end{itemize}

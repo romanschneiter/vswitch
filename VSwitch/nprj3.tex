@@ -1,0 +1,195 @@
+\documentclass{article}
+\usepackage{url}
+\usepackage{upquote}
+
+\title{BTI 3021: Networking Project - Sprint 3}
+
+\author{Christian Grothoff}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+For this sprint you will write an IP router, building upon the
+results from your previous sprint (ARP). You will most likely
+want to copy large parts of your ARP code into the router logic.
+
+While the driver and skeleton you are given is written in C, you may
+again use {\em any} language of your choice for the implementation (as
+long as you extend the {\tt Makefile} with adequate build rules).
+However, if you choose a different language, be prepared to write
+additional boilerplate yourselves.
+
+How an IP router works is expected to be understood from the
+networking class. If not, you can find plenty of documentation and
+specifications on the Internet.
+
+The basic setup is the same as in the first two sprints.
+
+\subsection{Deliverables}
+
+There will be two main deliverables for the sprint:
+
+\begin{description}
+\item[Implementation] You must implement an IPv4 router. Your
+  implementation must answer to IP packets, and route them.
+  For this, you are to extend the {\tt router.c} template provided
+  (or write the entire logic from scratch in another language).
+\item[Testing] You must implement and submit your own {\bf test cases}
+  by {\em pretending} to be the network driver (see below) and sending
+  IP packets or command-line inputs to your program and verifying that it
+  outputs the correct frames. Additionally, you should perform
+  {\em interoperability} tests against existing
+  implementations (i.e. other notebooks from your team to ensure that
+  your IP router implementation integrates correctly with other
+  implementations).
+\end{description}
+
+
+\subsection{Functionality}
+
+Implement {\tt router} which routes IPv4 packets:
+\begin{enumerate}
+\item Populate your routing table from the network interface configuration
+  given on the command-line using the same syntax as with the {\tt arp}
+  program.
+\item Use the ARP logic to resolve the target MAC address.   Simply drop the IP
+  packets for destinations where the next hop's MAC address has not yet been
+  learned, and issue the ARP request to obtain the destination’s MAC instead
+  (once per dropped IP packet).
+\item Make sure to decrement the TTL field and recompute the CRC.
+  % add link to logic implementing CRC?
+\item Generate ICMP messages for ``no route to network'' (ICMP
+    Type 3, Code 0) and ``TTL exceeded'' (ICMP Type 11, Code 0),
+\item Support the syntax {\tt IFC[RO]=MTU} where {\tt MTU} is the
+  MTU for IFC.  Example: {\tt eth0=1500}.  Implement and test IPv4 fragmentation
+  (including {\em do not fragment}-flag support), including sending
+  ICMP  (ICMP Type 3, Code 4).
+\item Support dynamic updates to the routing table via {\tt stdin}.
+  Base your commands on the {\tt ip route} tool.  For example,
+  ``route list'' should output the routing table, and
+  ``route add 1.2.0.0/16 via 192.168.0.1 dev eth0'' should add
+  a route to {\tt 1.2.0.0/16} via the next hop {\tt 192.168.0.1}
+  which should be reachable via {\tt eth0}.  Implement at least
+  the {\tt route list}, {\tt route add} and {\tt route del} commands.
+  The interface-specific (connected local network) routes that
+  are added upon startup from the command-line must not need to be
+  {\tt del}etable.
+\end{enumerate}
+
+The output of your routing table should have the following format:
+\begin{verbatim}
+192.168.0.0/255.255.0.0 -> 1.2.3.4 (eth0)
+\end{verbatim}
+Use 0.0.0.0 if there is no next hop (the target host is in the connected
+LAN on the specified interface).  You may print the routing table
+in any order. Do include locally connected networks.
+
+Routing table entries for locally connected networks MUST NOT be
+configured explictly (via ``route add``) but must be automatically
+created when your router starts (from the command-line arguments). You
+do not have to support removal of those routing table entries.
+
+
+Note that your implementation must realize following functions of a
+router:
+
+\begin{itemize}
+\item Basic IP handling (TTL, ICMP, Checksum) % IP TTL decremented, ICMP? Checksum?
+\item Forwarding and routing % IP packets flow? Mac updated?
+\item Address resultion and caching % ARP cache?
+\item IP fragmentation % Use eth3 for testing
+\end{itemize}
+
+
+\input{testing.tex}
+
+\section{Grading}
+
+\input{grading.tex}
+
+\subsection{Router grading}
+
+You get points for each of the key deliverables:
+\begin{center}
+\begin{tabular}{l|r}
+Correct implementation                    & 14 \\ \hline
+Comprehensive test cases                  &  8 \\ \hline \hline
+Total                                     & 22
+\end{tabular}
+\end{center}
+
+
+\subsubsection{Correct implementation}
+\begin{itemize}
+\item 14 points for passing test cases
+\end{itemize}
+
+\subsubsection{Comprehensive test cases}
+\begin{itemize}
+\item 0 points if public reference implementation (see Section~\ref{sec:binaries})
+      fails test cases, {\bf otherwise}
+\item 8 points for failing buggy implementations (see Section~\ref{sec:binaries})
+\end{itemize}
+
+\input{bonus.tex}
+
+\section{Provided code}
+
+\input{code.tex}
+
+The main file for the exercise is {\tt router.c}. In this file, you
+should implement a program {\tt router} which implements an IPv4 router.
+
+
+\section{Provided binaries} \label{sec:binaries}
+
+You are provided with several binaries:
+
+\begin{description}
+\item[reference-test-router] A public test case, run using ``./reference-test-router ./router''
+  to test your router. Returns 0 on success.
+\item[reference-router] Reference implementation of the ``router''.
+\item[bug1-router] Buggy implementation of a ``router``.
+\item[bug2-router] Buggy implementation of a ``router``.
+\item[bug3-router] Buggy implementation of a ``router``.
+\item[bug4-router] Buggy implementation of a ``router``.
+\end{description}
+
+\newpage
+\section{Required make targets}
+
+You may modify the build system. However, the final build system must
+have the following {\tt make} targets:
+
+\begin{description}
+\item[all] build all binaries
+\item[clean] remove all compiled files
+\item[router] build your ``router`` binary from source; the binary MUST end up in the top-level directory of your build tree.
+\item[test-router] build your ``test-router`` program from source; the program MUST end up in the top-level directory of your build tree.
+\item[check-router] Run ``test-router`` against the ``router'' binary.
+\end{description}
+
+For grading, we will basically run commands like:
+\begin{verbatim}
+GRADE=0
+make test-router
+cp bug1-router router
+make check-router || GRADE=`expr $GRADE + 2`
+cp bug2-router router
+make check-router || GRADE=`expr $GRADE + 2`
+cp bug3-router router
+make check-router || GRADE=`expr $GRADE + 2`
+cp bug4-router router
+make check-router || GRADE=`expr $GRADE + 2`
+cp refernece-router router
+make check-router || GRADE=0
+echo "Test grade: $GRADE"
+\end{verbatim}
+You must thus make sure the build system continues to create programs in the
+right (top-level) location!
+
+
+\end{document}

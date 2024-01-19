@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,decorations.pathreplacing,shapes,fit}
+\usepackage{colortbl}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+\usepackage{array, adjustbox,url}
+\usepackage{pifont,marvosym} % wasysym
+\usepackage{rotating,subfig}
+\usepackage{xspace}
+
+\title{BTI 3021: Networking Project - Kick off}
+
+\author{Christian Grothoff}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+These exercises may help you get familiar with the provided environment.
+They are {\bf not graded}.
+
+\subsection{Implement a hub}
+
+Implement {\tt hub} which forwards frames received on any interface to
+all other interfaces ({\tt eth0} through {\tt eth3}), without changing
+them at all.  The {\tt hub} binary should take the list of interfaces
+to use on the command line.
+
+\subsection{Frame parsing}
+
+Extend the simple frame {\tt parser} to:
+\begin{enumerate}
+\item Output your system's MAC address(es) in the canonical human-readable format.
+\item Output the source MAC, destination MAC, payload type and payload length
+  of each frame received. Confirm your results with {\tt wireshark}.
+\end{enumerate}
+
+\input{setup.tex}
+
+\section{Provided code}
+
+\input{code.tex}
+
+The main files for the exercise are: {\tt parser.c},
+{\tt hub.c} and {\tt test-hub.c}.
+
+\begin{description}
+  \item[hub.c] Skeleton to implement a hub.
+  \item[test-hub.c] A public test case, run using ``./test-hub ./hub'' to test your hub. Returns 0 on success.
+  \item[parser.c] Skeleton to implement a protocol parser.
+  \item[harness.h] API for harness.c
+  \item[harness.c] Helper logic for writing automated test cases
+\end{description}
+
+
+\section{Provided make targets}
+
+The provided build system has the following {\tt make} targets:
+
+\begin{description}
+\item[all] build all binaries
+\item[clean] remove all compiled files
+\item[hub] build your ``hub`` binary from source; the binary MUST end up in the top-level directory of your build tree.
+\item[test-hub] build your ``test-hub`` program from source; the program MUST end up in the top-level directory of your build tree.
+\item[check-hub] Run ``test-hub`` against the ``hub'' binary.
+\end{description}
+
+
+\end{document}

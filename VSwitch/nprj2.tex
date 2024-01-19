@@ -1,0 +1,196 @@
+\documentclass{article}
+\usepackage{url}
+\usepackage{upquote}
+
+\title{BTI 3021: Networking Project - Sprint 2}
+
+\author{Christian Grothoff}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+For this sprint you will write a precursor to an IP router.  This
+precursor system is to realize the ARP protocol functionality of
+an IP device.
+
+While the driver and skeleton you are given is written in C, you may
+use {\em any} language of your choice for the implementation (as long
+as you extend the {\tt Makefile} with adequate build rules).  However,
+if you choose a different language, be prepared to write additional
+boilerplate yourselves.
+
+How the ARP protocol works is expected to be understood from the
+networking class. If not, you can find plenty of documentation and
+specifications on the Internet.
+
+The basic setup is the same as in the first sprint.
+
+\subsection{Deliverables}
+
+There will be two main deliverables for the sprint:
+
+\begin{description}
+\item[Implementation] You must {\bf implement the ARP protocol}. Your
+  implementation must answer to ARP requests, and also itself
+  have the ability to issue ARP requests and to cache ARP replies.
+  For this, you are to extend the {\tt arp.c} template provided
+  (or write the entire logic from scratch in another language).
+\item[Testing] You must implement and submit your own {\bf test cases}
+  by {\em pretending} to be the network driver (see below) and sending
+  ARP requests or command-line inputs to your program and verifying that it
+  outputs the correct frames. Additionally, you should perform
+  {\em interoperability} tests against existing
+  implementations (i.e. other notebooks from your team to ensure that
+  your ARP protocol implementation integrates correctly with other
+  implementations).
+\end{description}
+
+All deliverables must be submitted to Git (master branch)
+by the submission deadline announced on Moodle.
+
+\subsection{Functionality}
+
+The goal is to implement a program {\tt arp} that:
+\begin{enumerate}
+\item Watches for ARP queries on the Ethernet link and responds with ARP responses
+  if queries are seen for your own IP address(es)
+\item Provides an ARP cache so that it does not have to repeatedly
+  make ARP requests to the network for MAC addresses it already knows.
+\item Allows the user to trigger ARP requests via the console
+  by reading ``arp`` commands with IPv4 addresses from {\tt stdin} (in human-readable format).
+  The interactive command syntax should be
+  ``arp {\em IP-ADDR} {\em IFNAME}'' (i.e. each line is to be prefixed with
+  the letters ``arp '', followed by the IPv4 address and the name of
+  the network interface).
+  \begin{enumerate}
+  \item
+  If the {\tt IP-ADDR} is in the ARP cache, the program must immediately
+  output the associated {\em MAC}:
+\begin{verbatim}
+28:c6:3f:1a:0a:bf
+\end{verbatim}
+  \item
+  If the {\tt IP-ADDR} is {\bf not} in the ARP cache, the program should {\em only}
+  issue the ARP query for those IPv4 addresses.
+  \end{enumerate}
+\item If an ARP request for one of your IP addresses
+  or an ARP response destined for your system (IP and MAC)
+  is received (at any time), the ARP cache must be
+  updated accordingly. However, the MAC address MUST NOT be output at
+  that time, even if there was an explicit command-line request for this
+  address before.
+\item If the user just enteres ``arp'' without
+  an IP address, you should output the ARP table in the format
+  ``{\em IP} -$>$ {\em MAC} ({\em IFNAME})'' with one entry per line,
+  i.e.
+\begin{verbatim}
+10.54.25.15 -> 28:c6:3f:1a:0a:bf (eth1)
+\end{verbatim}
+  (note the leading ``0'' digit in {\tt 0a}).
+\end{enumerate}
+
+Your programm should be invoked with the name of the interface, the IP
+address\footnote{You may support multiple IPs per network interface,
+  using a comma-separated list of IPs and network masks, but this is
+  not required.} for that interface and the network mask.  Example:
+\begin{verbatim}
+$ network-driver eth0 eth1 - \
+  arp eth0[IPV4:192.168.0.1/16] eth1[IPV4:10.0.0.3/24]
+\end{verbatim}
+This means {\tt eth0} is to be bound to 192.168.0.1 (netmask 255.255.0.0)
+and {\tt eth1} uses 10.0.0.3 (netmask 255.255.255.0).
+
+The file {\tt arp.c} provides a starting point where the parsing of
+the command-line arguments and the {\tt stdin}-interaction have been
+stubbed for you.
+
+
+\input{testing.tex}
+
+\section{Grading}
+
+\input{grading.tex}
+
+\subsection{ARP grading}
+
+You get points for each of the key deliverables:
+\begin{center}
+\begin{tabular}{l|r}
+Correct implementation                    & 10 \\ \hline
+Comprehensive test cases                  &  4 \\ \hline \hline
+Total                                     & 14
+\end{tabular}
+\end{center}
+
+
+\subsubsection{Correct implementation}
+\begin{itemize}
+  \item 10 points for passing test cases
+\end{itemize}
+
+\subsubsection{Comprehensive test cases}
+\begin{itemize}
+\item 0 points if public reference implementation (see Section~\ref{sec:binaries})
+      fails test cases, {\bf otherwise}
+\item 4 points for failing buggy implementations (see Section~\ref{sec:binaries})
+\end{itemize}
+
+\input{bonus.tex}
+
+\input{setup.tex}
+
+\section{Provided code}
+
+\input{code.tex}
+
+The main file for the exercise is {\tt arp.c}. In this file, you
+should implement a program {\tt arp} which answers to ARP requests,
+can initiate ARP requests from the command line and cache the answers.
+
+
+\section{Provided binaries} \label{sec:binaries}
+
+You are provided with several binaries:
+\begin{description}
+\item[reference-test-arp] A public test case, run using ``./reference-test-arp ./arp''
+  to test your ARP implementation. Returns 0 on success.
+\item[reference-arp] Reference implementation of the ``arp''.
+\item[bug1-arp] Buggy implementation of a ``arp``.
+\item[bug2-arp] Buggy implementation of a ``arp``.
+\end{description}
+
+\newpage
+\section{Required make targets}
+
+You may modify the build system. However, the final build system must
+have the following {\tt make} targets:
+
+\begin{description}
+\item[all] build all binaries
+\item[clean] remove all compiled files
+\item[arp] build your ``arp`` binary from source; the binary MUST end up in the top-level directory of your build tree.
+\item[test-arp] build your ``test-arp`` program from source; the program MUST end up in the top-level directory of your build tree.
+\item[check-arp] Run ``test-arp`` against the ``arp'' binary.
+\end{description}
+
+For grading, we will basically run commands like:
+\begin{verbatim}
+GRADE=0
+make test-arp
+cp bug1-arp arp
+make check-arp || GRADE=`expr $GRADE + 2`
+cp bug2-arp arp
+make check-arp || GRADE=`expr $GRADE + 2`
+cp reference-arp arp
+make check-arp || GRADE=0
+echo "Test grade: $GRADE"
+\end{verbatim}
+
+You must thus make sure the build system continues to create programs in the
+right (top-level) location!
+
+
+\end{document}

@@ -1,0 +1,24 @@
+
+You are given a few C snippets as starting points. However, these
+mostly serve to {\em illustrate} how to process the output from the
+driver. You are completely free to implement your application in {\em
+  any} programming language.  Note that each file includes about 20
+LOC of a licensing statement, so the functions provided should not
+provide a significant advantage for implementations in C.
+
+\begin{description}
+\item[parser.c]{This file includes a simple starting point for
+  a wireshark-like frame inspection code.
+  It mostly shows how the frames are received and
+  a bit how to use the other C files. (82 LOC)}
+\item[glab.h]{A struct defining a MAC Address and a few common C includes. (90 LOC)}
+\item[print.c]{This file shows how to wrap messages to print them
+  via the driver. (112 LOC)}
+\item[loop.c]{This could be the main loop of your application. The code includes
+  some basic logic that looks at each frame, decides whether it is the MACs,
+  control or an Ethernet frame and then calls the respective function. (93 LOC)}
+\item[crc.c]{An implementation of checksum algorithms. (194 LOC)}
+\end{description}
+
+If you are using another programming language, you are free to re-use
+an existing CRC implementation in that language.

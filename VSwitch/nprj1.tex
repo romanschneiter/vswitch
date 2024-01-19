@@ -1,0 +1,143 @@
+\documentclass{article}
+\usepackage{url}
+\usepackage{upquote}
+
+\title{BTI 3021: Networking Project - Sprint 1}
+
+\author{Christian Grothoff}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+For this sprint you will implement, document and test an Ethernet
+switch in userland under GNU/Linux.
+
+While the driver and skeleton you are given is written in C, you may
+use {\em any} language of your choice for the implementation (as long
+as you extend the {\tt Makefile} with adequate build rules).  However,
+if you choose a different language, be prepared to write additional
+boilerplate yourselves.
+
+How an Ethernet switch works is expected to be understood from the
+networking class. If not, you can find plenty of documentation and
+specifications on the Internet.
+
+
+\subsection{Deliverables}
+
+There will be two main deliverables for the sprint:
+
+\begin{description}
+\item[Implementation] You must {\bf implement the switching
+  algorithm}, extending the {\tt switch.c} template provided
+  (or write the entire logic from scratch in another language).
+\item[Testing] You must implement and submit your own {\bf test cases}
+  by {\em pretending} to be the network driver (see below) and sending
+  various Ethernet frames to your program and verifying that it
+  outputs the correct frames. Additionally, you should perform
+  {\em interoperability} tests against existing
+  implementations (i.e. other notebooks from your team to ensure that
+  your switch integrates correctly with other implementations).
+\end{description}
+
+
+\subsection{Functionality}
+
+We will specifically also look for the following properties of a switch:
+\begin{itemize}
+\item Support for multicast and broadcast
+\item Changing external connections (re-learning when devices move around the network)
+\item Managing an ``attacker'' process that sends from billions of MAC
+  addresses.  Ensure your switch's learning table uses finite memory.
+\end{itemize}
+
+\input{testing.tex}
+
+\input{grading.tex}
+
+\subsection{Switch grading}
+
+For the {\bf switch} sprint, you get points for each of the key deliverables:
+\begin{center}
+\begin{tabular}{l|r}
+Correct implementation                    &  8 \\ \hline
+Comprehensive test cases                  &  6 \\ \hline \hline
+Total                                     & 14
+\end{tabular}
+\end{center}
+
+\subsubsection{Correct implementation}
+\begin{itemize}
+  \item 8 points for passing test cases
+\end{itemize}
+
+\subsubsection{Comprehensive test cases}
+\begin{itemize}
+\item 0 points if public reference implementation (see Section~\ref{sec:binaries})
+      fails test cases, {\bf otherwise}
+\item 6 points for failing buggy implementations (see Section~\ref{sec:binaries})
+\end{itemize}
+
+\input{bonus.tex}
+
+\input{setup.tex}
+
+\section{Provided code}
+
+\input{code.tex}
+
+The main file for the exercise is {\tt switch.c}. In this file, you should
+implement a program {\tt switch} which forwards frames received on any
+interface to any other interface, but passively learns MAC addresses
+and optimizes subsequent traffic.
+
+
+\section{Provided binaries} \label{sec:binaries}
+
+You are provided with several binaries:
+
+\begin{description}
+\item[reference-test-switch] A public test case, run using ``./reference-test-switch ./switch''
+  to test your switch. Returns 0 on success.
+\item[reference-switch] Reference implementation of the ``switch''.
+\item[bug1-switch] Buggy implementation of a ``switch''.
+\item[bug2-switch] Buggy implementation of a ``switch''.
+\item[bug3-switch] Buggy implementation of a ``switch''.
+\end{description}
+
+\newpage
+\section{Required make targets}
+
+You may modify the build system. However, the final build system must
+have the following {\tt make} targets:
+
+\begin{description}
+\item[all] build all binaries
+\item[clean] remove all compiled files
+\item[switch] build your ``switch`` binary from source; the binary MUST end up in the top-level directory of your build tree.
+\item[test-switch] build your ``test-switch`` program from source; the program MUST end up in the top-level directory of your build tree.
+\item[check-switch] Run ``test-switch`` against the ``switch'' binary.
+\end{description}
+
+For grading, we will basically run commands like:
+\begin{verbatim}
+GRADE=0
+make test-switch
+cp bug1-switch switch
+make check-switch || GRADE=`expr $GRADE + 2`
+cp bug2-switch switch
+make check-switch || GRADE=`expr $GRADE + 2`
+cp bug3-switch switch
+make check-switch || GRADE=`expr $GRADE + 2`
+cp reference-switch switch
+make check-switch || GRADE=0
+echo "Test grade: $GRADE"
+\end{verbatim}
+
+You must thus make sure the build system continues to create programs
+in the right (top-level) location!
+
+\end{document}
